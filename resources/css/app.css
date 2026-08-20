@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/* vendor css */
+@import 'tiny-slider/dist/tiny-slider.css';
+@import 'swiper/css';
+@import 'cropperjs/dist/cropper.min.css';
+
+
+@import '../assets/vendor/font-awesome/css/all.min.css';
+@import '../assets/vendor/bootstrap-icons/bootstrap-icons.css';
+@import '../assets/vendor/plyr/plyr.css';
+@import '../assets/vendor/glightbox/css/glightbox.css';
+@import '../assets/vendor/apexcharts/css/apexcharts.css';
+@import '../assets/vendor/overlay-scrollbar/css/OverlayScrollbars.min.css';
+@import '../assets/vendor/quill/css/quill.snow.css';
+@import './style-rtl.css';
+
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
