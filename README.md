@@ -1,59 +1,133 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📰 BlogWebApp — Persian News/Blog Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[English](#english) | [فارسی](#فارسی)
 
-## About Laravel
+A Persian-language news and blog platform built with Laravel 12, featuring a full editorial dashboard, a **Repository + Service layered architecture**, a self-built referral/traffic-analytics system, Google reCAPTCHA-protected forms, and social login.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+یک پلتفرم خبری/بلاگ فارسی‌زبان، ساخته‌شده با لاراول ۱۲، شامل یک داشبورد کامل تحریریه، معماری لایه‌بندی‌شده با **Repository + Service**، یک سیستم خودساخته‌ی تحلیل ریفرال/ترافیک، فرم‌های محافظت‌شده با گوگل reCAPTCHA، و ورود از طریق شبکه‌های اجتماعی.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## English
 
-## Learning Laravel
+### Overview
+BlogWebApp is a magazine-style content platform: writers publish articles across categories (with multimedia/video articles supported), readers comment and like, and admins manage everything from a dedicated dashboard with real visitor analytics. The codebase is smaller in scope than an e-commerce platform, but consistently applies solid architectural separation throughout.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### ✨ Key Strengths
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### 🏗️ Consistent Repository + Service Layering
+- Every major entity (`Article`, `Category`, `User`, `FileManager`) has its own **Repository** bound to an **Interface**, so controllers depend on abstractions rather than concrete Eloquent queries — making it straightforward to swap implementations or mock data access in tests.
+- A separate **Service layer** (`Dashboard\ArticleService`, `Dashboard\UserService`, `Dashboard\StatisticsService`, `Dashboard\TrafficStatService`) sits on top of the repositories, handling business logic and cross-cutting concerns like file uploads — keeping controllers focused purely on HTTP concerns.
+- `ArticleIndexService` is a great example of read-side design: it centralizes every homepage query variant (`getTrending`, `getTopByLikes`, `getVideoArticles`, `getByCategory`) behind one class with a shared `baseQuery()`, instead of duplicating eager-loading and column-selection logic across controllers.
 
-## Laravel Sponsors
+#### 📊 Self-Built Traffic & Referral Analytics
+- `TrafficStatMiddleware` logs a visit per request, and `TrackReferralMiddleware` inspects the `Referer` header to classify traffic sources (Google, Bing, Instagram, direct, or other) — all without pulling in a third-party analytics service, giving the dashboard first-party visitor insights out of the box.
+- Referral detection correctly guards against double-counting: it only records one referral per session (`session()->has('tracked_referral')`) and only when the referrer is genuinely external to the app's own domain.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+#### 🔐 Real Bot & Spam Protection
+- A custom `GoogleRecaptcha` validation rule implements Laravel's `ValidationRule` contract, calling Google's `siteverify` API directly inside a form request — with support for action-based and score-based verification (reCAPTCHA v3), not just a simple pass/fail checkbox.
+- Clear, user-facing Persian error messages distinguish between different failure modes (verification service unreachable, failed verification, action mismatch, low trust score) instead of one generic error.
 
-### Premium Partners
+#### 🌍 Multi-Provider Social Login with Sensible Fallbacks
+- `SocialLoginController` handles OAuth login generically across drivers via Socialite, linking to an existing account by email or transparently creating a new one — complete with a randomly generated password and a welcome email dispatched through the event system for new accounts.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+#### 📨 Event-Driven Transactional Email
+- Registration, password resets, and newsletter subscriptions all follow the same clean pattern: **Event → Listener → queued Job → Mailable**, so sending a welcome email or a new-password email never blocks the request that triggered it.
 
-## Contributing
+#### 🌐 Practical Iran-Focused Integrations
+- A `CurrencyApiService` fetches live gold/currency exchange rates from a Persian market data API, likely powering a ticker or widget relevant to an Iranian readership.
+- Persian (Jalali) calendar support via `hekmatinasser/verta`, plus a dedicated `JalaliDate` helper.
+- Full `fa`/`en` language files and an RTL stylesheet (`style-rtl.css`) for genuine bilingual support, not just an afterthought translation layer.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### 🧩 Thoughtful Small Details
+- `Article`'s `slug` mutator automatically generates a slug from the title when none is provided (`makeSlug($value ?? $this->title)`), and the model uses `slug` as its route key — clean, SEO-friendly URLs without extra controller code.
+- A dedicated `RedirectWithToastHelper` centralizes flash-message redirects, keeping toast notifications consistent across the whole app instead of manually setting session flash data everywhere.
 
-## Code of Conduct
+### 🛠️ Tech Stack
+- **Backend:** PHP 8.2, Laravel 12
+- **Auth:** Laravel's built-in auth, Socialite (social login), Google reCAPTCHA
+- **Persian Support:** `hekmatinasser/verta` (Jalali calendar)
+- **Media:** `intervention/image-laravel`, custom file manager
+- **Frontend:** Vite, Blade, TinyMCE, Swiper.js
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 🚀 Getting Started
+```bash
+composer install
+npm install
 
-## Security Vulnerabilities
+cp .env.example .env
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+php artisan migrate --seed
 
-## License
+npm run dev
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Make sure to configure your Google reCAPTCHA keys, social login credentials, and currency API key in `.env` before testing those features.
+
+---
+
+## فارسی
+
+### معرفی
+BlogWebApp یک پلتفرم محتوایی به سبک مجله است: نویسندگان مقاله‌هایی در دسته‌بندی‌های مختلف منتشر می‌کنند (با پشتیبانی از مقاله‌های چندرسانه‌ای/ویدیویی)، خوانندگان کامنت و لایک می‌گذارند، و ادمین‌ها همه‌چیز را از یک داشبورد اختصاصی همراه با تحلیل واقعی بازدیدکننده مدیریت می‌کنند. این کدبیس از نظر دامنه کوچک‌تر از یک پلتفرم فروشگاهی است، اما جداسازی معماری قوی را به‌طور پیوسته در سراسر پروژه اعمال کرده.
+
+### ✨ نقاط قوت اصلی
+
+#### 🏗️ لایه‌بندی پیوسته با Repository + Service
+- هر موجودیت اصلی (`Article`, `Category`, `User`, `FileManager`) یک **Repository** اختصاصی دارد که به یک **Interface** متصل شده، بنابراین کنترلرها به انتزاع‌ها وابسته‌اند نه کوئری‌های مستقیم Eloquent — که جایگزین‌کردن پیاده‌سازی یا mock کردن دسترسی به داده در تست‌ها را ساده می‌کند.
+- یک **لایه‌ی Service** جداگانه (`Dashboard\ArticleService`, `Dashboard\UserService`, `Dashboard\StatisticsService`, `Dashboard\TrafficStatService`) روی Repositoryها قرار گرفته و منطق کسب‌وکار و دغدغه‌های عرضی مثل آپلود فایل را مدیریت می‌کند — و کنترلرها را فقط متمرکز بر مسائل HTTP نگه می‌دارد.
+- `ArticleIndexService` نمونه‌ی خوبی از طراحی سمت خواندن است: تمام حالت‌های مختلف کوئری صفحه‌ی اصلی (`getTrending`, `getTopByLikes`, `getVideoArticles`, `getByCategory`) را پشت یک کلاس با `baseQuery()` مشترک متمرکز می‌کند، به‌جای تکرار منطق eager-loading و انتخاب ستون در چند کنترلر.
+
+#### 📊 تحلیل ترافیک و ریفرال خودساخته
+- `TrafficStatMiddleware` هر درخواست را به‌عنوان یک بازدید ثبت می‌کند، و `TrackReferralMiddleware` هدر `Referer` را بررسی کرده تا منابع ترافیک را دسته‌بندی کند (گوگل، بینگ، اینستاگرام، مستقیم، یا سایر) — همه بدون استفاده از سرویس تحلیل شخص‌ثالث، و این یعنی داشبورد بینش بازدیدکننده‌ی first-party دارد بدون نیاز به هیچ ابزار خارجی.
+- تشخیص ریفرال به‌درستی در برابر شمارش دوباره محافظت می‌کند: فقط یک ریفرال در هر سشن ثبت می‌شود (`session()->has('tracked_referral')`) و فقط زمانی که ریفرر واقعاً خارج از دامنه‌ی خود برنامه باشد.
+
+#### 🔐 محافظت واقعی در برابر بات و اسپم
+- یک قانون اعتبارسنجی اختصاصی به نام `GoogleRecaptcha`، قرارداد `ValidationRule` لاراول را پیاده‌سازی می‌کند و مستقیماً درون یک Form Request، API `siteverify` گوگل را فراخوانی می‌کند — با پشتیبانی از اعتبارسنجی مبتنی بر اکشن و امتیاز (reCAPTCHA نسخه ۳)، نه فقط یک چک‌باکس ساده‌ی قبول/رد.
+- پیام‌های خطای فارسی و واضح برای کاربر، حالت‌های شکست مختلف را از هم تفکیک می‌کنند (عدم دسترسی به سرویس اعتبارسنجی، شکست اعتبارسنجی، عدم تطابق اکشن، امتیاز اعتماد پایین) به‌جای یک پیام خطای کلی و یکسان.
+
+#### 🌍 ورود اجتماعی چندسرویسه با جایگزین‌های منطقی
+- `SocialLoginController` ورود OAuth را به‌طور عمومی و مستقل از درایور، از طریق Socialite مدیریت می‌کند، و کاربر را با ایمیل به حساب موجود متصل می‌کند یا به‌طور شفاف یک حساب جدید می‌سازد — همراه با یک رمز عبور تصادفی و یک ایمیل خوش‌آمدگویی که برای حساب‌های جدید از طریق سیستم Event ارسال می‌شود.
+
+#### 📨 ایمیل تراکنشی مبتنی بر Event
+- ثبت‌نام، بازیابی رمز عبور، و اشتراک خبرنامه همگی از یک الگوی تمیز یکسان پیروی می‌کنند: **Event → Listener → Job صف‌شده → Mailable**، بنابراین ارسال ایمیل خوش‌آمدگویی یا ایمیل رمز جدید هرگز درخواستی که آن را فعال کرده را مسدود نمی‌کند.
+
+#### 🌐 یکپارچه‌سازی‌های کاربردی متمرکز بر ایران
+- یک `CurrencyApiService` نرخ زنده‌ی طلا/ارز را از یک API داده‌ی بازار فارسی دریافت می‌کند، که به‌احتمال زیاد یک ticker یا ویجت مرتبط با مخاطب ایرانی را تغذیه می‌کند.
+- پشتیبانی از تقویم جلالی از طریق `hekmatinasser/verta`، به‌علاوه یک هلپر اختصاصی `JalaliDate`.
+- فایل‌های زبان کامل `fa`/`en` و یک استایل‌شیت RTL (`style-rtl.css`) برای پشتیبانی واقعی دوزبانه، نه فقط یک لایه‌ی ترجمه‌ی بعداً اضافه‌شده.
+
+#### 🧩 جزئیات کوچک اما هوشمندانه
+- Mutator مربوط به `slug` در مدل `Article` به‌طور خودکار، در صورت نبود ورودی، اسلاگ را از عنوان می‌سازد (`makeSlug($value ?? $this->title)`)، و مدل از `slug` به‌عنوان کلید روت استفاده می‌کند — یعنی URLهای تمیز و مناسب SEO بدون نیاز به کد اضافه در کنترلر.
+- یک `RedirectWithToastHelper` اختصاصی، ریدایرکت‌های همراه با پیام Flash را در یک‌جا متمرکز می‌کند و نوتیفیکیشن‌های Toast را در کل برنامه یکدست نگه می‌دارد، به‌جای تنظیم دستی داده‌ی Flash سشن در همه‌جا.
+
+### 🛠️ تکنولوژی‌های استفاده‌شده
+- **بک‌اند:** PHP 8.2، Laravel 12
+- **احراز هویت:** سیستم احراز هویت داخلی لاراول، Socialite (ورود اجتماعی)، Google reCAPTCHA
+- **پشتیبانی فارسی:** `hekmatinasser/verta` (تقویم جلالی)
+- **رسانه:** `intervention/image-laravel`، مدیر فایل اختصاصی
+- **فرانت‌اند:** Vite، Blade، TinyMCE، Swiper.js
+
+### 🚀 راه‌اندازی پروژه
+```bash
+composer install
+npm install
+
+cp .env.example .env
+php artisan key:generate
+
+php artisan migrate --seed
+
+npm run dev
+php artisan serve
+```
+
+پیش از تست این قابلیت‌ها، حتماً کلیدهای Google reCAPTCHA، اطلاعات ورود اجتماعی، و کلید API ارز را در فایل `.env` تنظیم کنید.
+
+---
+
+## 📄 License
+This project is open-sourced software.
+این پروژه به‌صورت متن‌باز منتشر شده است.
